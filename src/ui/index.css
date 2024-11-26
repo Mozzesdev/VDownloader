@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #fafafa;
+    --background-secondary: #a5a5a5;
+    --primary: #282828;
+    --secondary: #a8a8a8;
+    --radius: 0.5rem;
+  }
+  
+  .dark {
+    --background: #2f3136;
+    --background-secondary: #292b2f;
+    --primary: #efefef;
+    --secondary: #1f1f1f;
+  }
+
+  .drag {
+    -webkit-app-region: drag;
+  }
+  
+  .no-drag {
+    -webkit-app-region: no-drag;
+  }
+}
+
+@layer base {
+  body {
+    @apply font-sans antialiased bg-background text-primary;
+  }
+}
+
+*::-webkit-scrollbar-track {
+  border-radius: 4px; /* Esquinas redondeadas */
+  background: #262626; /* Hace invisible el track */
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: #1b1b1b; /* Azul Discord */
+  border-radius: 4px; /* Esquinas redondeadas */
+  border: none; /* Elimina bordes del thumb */
+}
+
+*::-webkit-scrollbar {
+  width: 8px; /* Grosor del scrollbar */
+  height: 8px; /* Opcional, para barras horizontales */
+}

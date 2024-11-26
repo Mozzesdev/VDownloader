@@ -1,0 +1,24 @@
+{
+    "appId": "com.winflix.playlist-downloader",
+    "files": [
+      "dist-electron",
+      "dist-react"
+    ],
+    "icon": "./icon",
+    "mac": {
+      "target": "dmg",
+      "sign": false
+    },
+    "linux": {
+      "target": "AppImage",
+      "category": "Utility"
+    },
+    "win": {
+      "target": [
+        "portable",
+        "msi"
+      ],
+      "sign": false
+    }
+  }
+  
