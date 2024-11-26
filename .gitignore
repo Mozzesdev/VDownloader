@@ -24,3 +24,4 @@ dist-react
 *.njsproj
 *.sln
 *.sw?
+*.exe
