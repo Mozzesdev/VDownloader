@@ -1,10 +1,15 @@
 // src/App.tsx
 import React, { useEffect, useState } from "react";
-import { Download, Grid, List, Loader2, Settings } from "lucide-react";
+import {
+  Download,
+  Grid2X2,
+  List,
+  Loader2,
+  Search,
+  Settings,
+} from "lucide-react";
 import { Input } from "./components/Input";
 import Button from "./components/Button";
-import { useTheme } from "./providers/ThemeProvider";
-import ThemeToggle from "./components/ThemeToggles";
 import ProgressBar from "./components/ProgressBar";
 import Alert, { AlertType } from "./components/Alert";
 import { PreferencesModal } from "./preferences/PreferencesModal";
@@ -20,6 +25,7 @@ type Video = {
   duration: string;
   thumbnail: string;
   size: string;
+  id: string;
 };
 
 const App: React.FC = () => {
@@ -43,8 +49,6 @@ const App: React.FC = () => {
   const removeAlert = (id: number) => {
     setAlerts((prevAlerts) => prevAlerts.filter((alert) => alert.id !== id));
   };
-
-  const { theme, toggleTheme } = useTheme();
 
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
 
@@ -115,6 +119,7 @@ const App: React.FC = () => {
       if (urlType === "video") {
         const videoDetails = await window.electronAPI.getVideo(values.url);
         setPlayList([videoDetails]); // Tratamos el video como una lista de un solo elemento
+        console.log(videoDetails);
       } else if (urlType === "playlist") {
         const playlist = await window.electronAPI.getPlaylist(values.url);
         setPlayList(playlist);
@@ -169,9 +174,35 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="p-4">
+    <div className="mx-auto max-w-[1200px] container">
       {isModalOpen && (
         <PreferencesModal onClose={() => setIsModalOpen(false)} />
+      )}
+      <div className="fixed bottom-4 left-4">
+        <Button
+          onClick={() => setIsModalOpen(true)}
+          className="!p-2 rounded-md"
+        >
+          <Settings className="h-4 w-4" />
+        </Button>
+      </div>
+      {isLoading.value && (
+        <>
+          <div className="fixed inset-0 z-10 flex justify-center items-center bg-[#00000054] pointer-events-none">
+            <div className="flex flex-col items-center">
+              <div className="flex items-center justify-center">
+                <Loader2 className="animate-spin mr-2" />
+                {isLoading.info}
+              </div>
+              {downloadProgress !== null && (
+                <div className="w-full max-w-md">
+                  <ProgressBar value={downloadProgress} className="mb-4" />
+                  <p className="text-sm text-gray-400 text-center">{`${downloadProgress}% Completado`}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
       )}
       <div className="fixed bottom-4 right-4 max-w-[420px] space-y-2">
         {alerts.map((alert) => (
@@ -182,64 +213,36 @@ const App: React.FC = () => {
           />
         ))}
       </div>
-      <div className="fixed bottom-6 left-6">
-        <ThemeToggle toggleTheme={toggleTheme} theme={theme} />
-      </div>
-      <div className="container mx-auto bg-background-secondary p-4 rounded-md max-w-[1200px]">
-        {isLoading.value ? (
-          <>
-            <div className="fixed inset-0 z-10 flex justify-center items-center bg-[#00000054] pointer-events-none">
-              <div className="flex flex-col items-center">
-                <div className="flex items-center justify-center">
-                  <Loader2 className="animate-spin mr-2" />
-                  {isLoading.info}
-                </div>
-                {downloadProgress !== null && (
-                  <div className="w-full max-w-md">
-                    <ProgressBar value={downloadProgress} className="mb-4" />
-                    <p className="text-sm text-gray-400 text-center">{`${downloadProgress}% Completado`}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </>
-        ) : (
-          ""
-        )}
-        <h1 className="text-2xl font-bold mb-4">Descargador de Videos</h1>
-        <form onSubmit={handleSubmit} className="mb-8">
+      <div className="mx-auto bg-[var(--background-secondary)] p-4 rounded-md">
+        <h1 className="text-2xl font-bold mb-4">VDownloader</h1>
+        <form onSubmit={handleSubmit}>
           <div className="flex gap-2">
             <Input
               type="url"
               placeholder="Ingresa la URL del video o playlist"
               name="url"
-              required
             />
             <Button type="submit" size="sm">
-              <Download className="inline-block w-4" />
-              Obtener playlist
+              Buscar
+              <Search className="inline-block w-4" />
             </Button>
           </div>
-          <p className="text-red-400">{error}</p>
+          <p className="text-red-400 mt-2">{error}</p>
         </form>
+      </div>
+      <div className="mt-3 rounded-sm bg-[var(--foreground)] p-4">
         <div className="mb-4 flex justify-between items-center">
           <h2 className="text-xl font-semibold">Lista de Videos</h2>
           <div className="flex gap-2">
             <Button
               onClick={() => setIsGridView(!isGridView)}
-              className="!p-2 border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="!p-2 rounded-md"
             >
               {isGridView ? (
                 <List className="h-4 w-4" />
               ) : (
-                <Grid className="h-4 w-4" />
+                <Grid2X2 className="h-4 w-4" />
               )}
-            </Button>
-            <Button
-              onClick={() => setIsModalOpen(true)}
-              className="!p-2 border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <Settings className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -253,7 +256,7 @@ const App: React.FC = () => {
           {playList.length
             ? playList.map((video) => (
                 <div
-                  key={video.videoDetails.id}
+                  key={video.id}
                   className={`bg-[#202124] rounded-lg shadow-md overflow-hidden ${
                     !isGridView ? "flex" : ""
                   }`}

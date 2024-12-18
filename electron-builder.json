@@ -1,5 +1,5 @@
 {
-    "appId": "com.winflix.playlist-downloader",
+    "appId": "com.winflix.v-downloader",
     "files": [
       "dist-electron",
       "dist-react"

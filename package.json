@@ -18,9 +18,13 @@
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.1.0",
+    "@tailwindcss/vite": "4.0.0-beta.2",
+    "axios": "^1.7.8",
+    "cheerio": "^1.0.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "cross-env": "^7.0.3",
+    "jintr": "^3.2.0",
     "lucide-react": "^0.460.0",
     "os-locale": "^6.0.2",
     "playlist-downloader": "file:../VDownloader",
@@ -29,14 +33,14 @@
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",
     "ts-node": "^10.9.2",
-    "ytdl-core": "^4.11.5",
-    "ytpl": "^2.3.0"
+    "yt-search": "^2.12.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",
     "@types/node": "^22.9.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
+    "@types/yt-search": "^2.10.3",
     "@vitejs/plugin-react-swc": "^3.5.0",
     "autoprefixer": "^10.4.20",
     "concurrently": "^9.1.0",

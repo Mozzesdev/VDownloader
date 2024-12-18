@@ -14,7 +14,7 @@ export function PreferencesModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+      className="fixed inset-0 bg-[#00000081] flex items-center justify-center z-10"
       id="layout"
       onMouseDown={(e) => {
         if ((e.target as HTMLDivElement).id === "layout") {

@@ -4,7 +4,7 @@ const Layout = ({ children }: any) => {
   return (
     <div>
       <TitleBar />
-      {children}
+      <div className="p-4">{children}</div>
     </div>
   );
 };
