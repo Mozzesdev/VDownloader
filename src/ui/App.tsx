@@ -119,7 +119,6 @@ const App: React.FC = () => {
       if (urlType === "video") {
         const videoDetails = await window.electronAPI.getVideo(values.url);
         setPlayList([videoDetails]); // Tratamos el video como una lista de un solo elemento
-        console.log(videoDetails);
       } else if (urlType === "playlist") {
         const playlist = await window.electronAPI.getPlaylist(values.url);
         setPlayList(playlist);

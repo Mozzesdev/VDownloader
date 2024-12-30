@@ -26,6 +26,7 @@
     "cross-env": "^7.0.3",
     "jintr": "^3.2.0",
     "lucide-react": "^0.460.0",
+    "mp4box": "^0.5.3",
     "os-locale": "^6.0.2",
     "playlist-downloader": "file:../VDownloader",
     "react": "^18.3.1",

@@ -1,5 +1,11 @@
 import axios from "axios";
 import { createWriteStream, WriteStream } from "node:fs";
+import { Format } from "../interfaces/Format.js";
+import path from "node:path";
+import { promisify } from "node:util";
+import { exec } from "node:child_process";
+import { unlink } from "node:fs/promises";
+const execAsync = promisify(exec);
 
 export const isDev = (): boolean => process.env.NODE_ENV === "development";
 
@@ -91,6 +97,22 @@ export const decipherSignature = async (
     return null;
   }
 };
+
+export async function* streamToIterable(stream: ReadableStream<Uint8Array>) {
+  const reader = stream.getReader();
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        return;
+      }
+      yield value;
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
 
 export const getPlayerSourceCode = async (): Promise<string> => {
   const iframe = await axios.get("https://www.youtube.com/iframe_api");
@@ -349,4 +371,210 @@ const findVariableUsedInTypeofUndefined = (data: string): string | null => {
   }
 
   return null;
+};
+
+export default function evaluate(code: string, env: Record<string, any>) {
+  console.debug("Evaluating JavaScript:\n", code);
+
+  // Crear un nuevo contexto de ejecución
+  const context = { ...env };
+
+  // Crear una función que evalúe el código en el contexto dado
+  const contextKeys = Object.keys(context).join(", ");
+  const contextValues = Object.values(context);
+  const functionBody = `return (function(${contextKeys}) { ${code} })(${contextKeys});`;
+
+  const result = new Function(...contextKeys, functionBody)(...contextValues);
+
+  console.debug("Done. Result:", result);
+
+  return result;
+}
+
+export const generateRandomString = (length: number): string => {
+  const result = [];
+
+  const alphabet =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+
+  for (let i = 0; i < length; i++) {
+    result.push(alphabet.charAt(Math.floor(Math.random() * alphabet.length)));
+  }
+
+  return result.join("");
+};
+
+export function chooseFormat(
+  options: any,
+  streamingData?: any
+): { videoFormat: Format | null; audioFormat: Format | null } {
+  if (!streamingData) throw new Error("Streaming data not available");
+
+  const formats: Format[] = [
+    ...(streamingData.formats || []),
+    ...(streamingData.adaptiveFormats || []),
+  ];
+
+  const requiresAudio = options.type ? options.type.includes("audio") : true;
+  const requiresVideo = options.type ? options.type.includes("video") : true;
+  const quality = options.quality || "best";
+  const use_most_efficient = quality !== "best";
+
+  // Filtrar formatos de video
+  const videoFormats = formats.filter(
+    (format) => format.qualityLabel && !format.audioQuality
+  );
+
+  // Si solo se requiere audio
+  if (requiresAudio && !requiresVideo) {
+    const audioFormats = formats.filter(
+      (format) => format.audioQuality && !format.qualityLabel
+    );
+    if (!audioFormats.length)
+      throw new Error("No se encontraron formatos de audio disponibles.");
+
+    // Seleccionar el mejor formato de audio según la eficiencia o calidad
+    const bestAudioFormat = audioFormats.reduce((best, current) => {
+      return use_most_efficient
+        ? current.bitrate < best.bitrate
+          ? current
+          : best
+        : current.bitrate > best.bitrate
+        ? current
+        : best;
+    }, audioFormats[0]);
+
+    return { videoFormat: null, audioFormat: bestAudioFormat };
+  }
+
+  // Si se requiere video
+  let bestVideoFormat = null;
+  if (requiresVideo && videoFormats.length) {
+    // Seleccionar el mejor formato de video
+    bestVideoFormat = videoFormats[0];
+    if (quality === "best" || quality === "bestefficiency") {
+      bestVideoFormat = videoFormats.reduce((best, current) => {
+        return (current.width || 0) > (best.width || 0) ? current : best;
+      }, videoFormats[0]);
+    } else {
+      const specificQuality = videoFormats.find(
+        (format) => format.qualityLabel === quality
+      );
+      if (specificQuality) bestVideoFormat = specificQuality;
+    }
+  }
+
+  // Filtrar formatos combinados que coincidan con la calidad del video seleccionado
+  const combinedFormats = formats.filter(
+    (format) =>
+      format.audioQuality &&
+      format.qualityLabel === bestVideoFormat?.qualityLabel
+  );
+
+  if (combinedFormats.length > 0 && bestVideoFormat) {
+    // Elegir el mejor formato combinado según eficiencia o calidad
+    const bestCombinedFormat = combinedFormats.reduce((best, current) => {
+      return use_most_efficient
+        ? current.bitrate < best.bitrate
+          ? current
+          : best
+        : current.bitrate > best.bitrate
+        ? current
+        : best;
+    }, combinedFormats[0]);
+
+    return { videoFormat: bestCombinedFormat, audioFormat: null };
+  }
+
+  // Si no hay formatos combinados, buscar el mejor formato de audio
+  const audioFormats = formats.filter(
+    (format) => format.audioQuality && !format.qualityLabel
+  );
+  if (requiresAudio && audioFormats.length) {
+    const bestAudioFormat = audioFormats.reduce((best, current) => {
+      return use_most_efficient
+        ? current.bitrate < best.bitrate
+          ? current
+          : best
+        : current.bitrate > best.bitrate
+        ? current
+        : best;
+    }, audioFormats[0]);
+
+    return { videoFormat: bestVideoFormat, audioFormat: bestAudioFormat };
+  }
+
+  return { videoFormat: bestVideoFormat, audioFormat: null };
+}
+
+export const resolveFilePath = (format: Format): string => {
+  const formatExtension = format.mimeType.match(/\/([^;]+)/)?.[1] ?? "unknown";
+  const fileName = `${format.title}.${formatExtension}`;
+  const filePath = path.resolve(format.path as string, fileName);
+  return filePath;
+};
+
+/**
+ * Une un archivo de video y uno de audio en un solo archivo MP4 usando FFmpeg.
+ * @param videoPath Ruta del archivo de video.
+ * @param audioPath Ruta del archivo de audio.
+ * @param outputPath Ruta del archivo combinado.
+ * @returns Una promesa que se resuelve cuando el archivo combinado se completa.
+ */
+export const mergeVideoAndAudio = async (
+  videoPath: string,
+  audioPath: string,
+  outputPath: string
+): Promise<void> => {
+  // Verificar las extensiones para asegurarse de que los archivos sean compatibles
+  const videoExtension = path.extname(videoPath);
+  const audioExtension = path.extname(audioPath);
+
+  if (![".mp4", ".mkv", ".mov", ".webm"].includes(videoExtension)) {
+    throw new Error(
+      `El archivo de video con extensión ${videoExtension} no es compatible.`
+    );
+  }
+
+  if (
+    ![".mp4", ".mp3", ".aac", ".opus", ".m4a", ".ogg", ".wav"].includes(audioExtension)
+  ) {
+    throw new Error(
+      `El archivo de audio con extensión ${audioExtension} no es compatible.`
+    );
+  }
+
+  // Construir el comando FFmpeg
+  const ffmpegCommand = `ffmpeg -i "${videoPath}" -i "${audioPath}" -c:v copy -c:a aac -strict experimental "${outputPath}"`;
+
+  try {
+    // Ejecutar FFmpeg
+    await execAsync(ffmpegCommand);
+
+    await unlink(videoPath);
+    await unlink(audioPath);
+
+  } catch (error: any) {
+    console.error(`Error al combinar video y audio: ${error.message}`);
+    throw new Error("No se pudo combinar los archivos de video y audio.");
+  }
+};
+
+export const parseStreamingData = (streamingData: any) => {
+  const parsed_data = { streaming_data: {} };
+
+  if (streamingData) {
+    parsed_data.streaming_data = {
+      expires: new Date(
+        Date.now() + parseInt(streamingData.expiresInSeconds) * 1000
+      ),
+      formats: streamingData.formats,
+      adaptiveFormats: streamingData.adaptiveFormats,
+      dash_manifest_url: streamingData.dashManifestUrl,
+      hls_manifest_url: streamingData.hlsManifestUrl,
+      server_abr_streaming_url: streamingData.serverAbrStreamingUrl,
+    };
+  }
+
+  return parsed_data;
 };
