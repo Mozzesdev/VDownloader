@@ -28,7 +28,7 @@
   button,
   input,
   text-area {
-    @apply focus:ring-2 focus:ring-blue-500 focus:outline-none;
+    @apply focus-visible:outline-none focus-visible:ring-[2px] focus-visible:ring-blue-400;
   }
 }
 
@@ -38,6 +38,10 @@
 
 .no-drag {
   -webkit-app-region: no-drag;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
 }
 
 *::-webkit-scrollbar-track {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PreferencesNavigation } from "./PreferencesNavigation";
 import { AccountSettings } from "./AccountSettings";
 import { PrivacySettings } from "./PrivacySettings";
@@ -11,6 +11,19 @@ type SettingsSection = "account" | "privacy" | "appearance" | "accessibility";
 export function PreferencesModal({ onClose }: { onClose: () => void }) {
   const [activeSection, setActiveSection] =
     useState<SettingsSection>("account");
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
 
   return (
     <div

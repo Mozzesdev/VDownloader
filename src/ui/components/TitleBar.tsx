@@ -34,8 +34,7 @@ const TitleBar = () => {
           className="bg-transparent text-zinc-300 h-full cursor-pointer flex-1 focus:outline-none focus:ring-0 text-sm placeholder:opacity-0"
         />
       </div>
-
-      <div className="h-full flex">
+      <div className="h-full flex mt-[1px]">
         <button
           onClick={handleMinimize}
           className="h-full w-[40px] px-3 flex justify-center items-center hover:bg-gray-700 no-drag"

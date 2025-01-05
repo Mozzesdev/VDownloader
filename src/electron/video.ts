@@ -26,6 +26,13 @@ export interface VideoDetails {
   thumbnail: string | undefined;
   id: string;
   streamingData: any;
+  description: string;
+  formatSelected?: any;
+}
+
+export interface FormatOptions {
+  type: "video" | "audio" | "video+audio";
+  quality: "144p" | "240p" | "360p" | "480p" | "720p" | "1080p" | "best";
 }
 
 export const formatDuration = (seconds: number): string => {
@@ -129,6 +136,7 @@ export const getVideoDetails = async (
         ].url,
       size,
       streamingData,
+      description: videoDetails.shortDescription,
     };
 
     // Retornar todos los datos del video
@@ -206,12 +214,27 @@ export const downloadVideo = async (
     const videoTitle = sanitizeTitle(videoDetails.title);
     const streamingData = videoDetails.streamingData;
 
+    const formatSelected = [
+      ...(streamingData.formats || []),
+      ...(streamingData.adaptiveFormats || []),
+    ].find((fmat) => fmat.itag === videoDetails.formatSelected.id);
+
     const videOpts = {
-      type: "video+audio",
+      type: formatSelected?.audioQuality
+        ? "audio"
+        : formatSelected?.qualityLabel
+        ? "video"
+        : "video+audio",
       quality: "best",
     };
 
-    const { audioFormat, videoFormat } = chooseFormat(videOpts, streamingData);
+    let { audioFormat, videoFormat } = chooseFormat(videOpts, streamingData);
+
+    if (formatSelected?.qualityLabel && !formatSelected.audioQuality)
+      (videoFormat as Format) = formatSelected;
+
+    if (formatSelected?.audioQuality && !formatSelected.qualityLabel)
+      (audioFormat as Format) = formatSelected;
 
     if (audioFormat && !videoFormat) {
       const audioUrl = await getDownloadUrl(audioFormat);
@@ -222,6 +245,7 @@ export const downloadVideo = async (
         title: `${videoTitle}_audio`,
       };
 
+      audio.filePath = resolveFilePath(audio);
       const result = await downloadFile(audio, onProgress);
       return result;
     }
@@ -235,6 +259,7 @@ export const downloadVideo = async (
         title: `${videoTitle}_video`,
       };
 
+      video.filePath = resolveFilePath(video);
       const result = await downloadFile(video, onProgress);
       return result;
     }
@@ -276,6 +301,7 @@ export const downloadVideo = async (
       message: `No se encontraron formatos disponibles para la descarga.`,
     };
   } catch (error: any) {
+    console.log(error)
     return Promise.reject({
       success: false,
       message: `Error al descargar el video: ${error.message}`,
