@@ -2,10 +2,10 @@ import TitleBar from "./TitleBar";
 
 const Layout = ({ children }: any) => {
   return (
-    <div>
+    <>
       <TitleBar />
-      <div className="p-4">{children}</div>
-    </div>
+      <div className="p-4 min-h-dvh max-h-dvh overflow-auto">{children}</div>
+    </>
   );
 };
 

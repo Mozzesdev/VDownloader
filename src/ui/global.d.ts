@@ -8,9 +8,16 @@ declare global {
       ) => Promise<{ success: boolean; error?: string }>;
       getPlaylist: (url: string) => Promise<VideoDetails[]>;
       getVideo: (url: string) => Promise<VideoDetails>;
-      downloadVideo: (video: VideoDetails) => Promise<{ message: string }>;
-      onDownloadProgress: (callback: (progress: string) => void) => void;
-      removeDownloadProgressListener: () => void;
+      downloadVideo: (
+        video: VideoDetails,
+        dlId: string
+      ) => Promise<{ message: string; path?: string }>;
+      cancelDownload: any
+      onDLProgress: (
+        channel: string,
+        callback: (progress: number) => void
+      ) => void;
+      rmDLProgress: (channel: string) => void;
 
       // Métodos para gestionar el path de descarga
       setDownloadPath: (path: string) => Promise<void>;
@@ -21,6 +28,7 @@ declare global {
       close: () => void;
       setConfig: (config: Partial<AppConfig>) => Promise<{ success: boolean }>;
       getConfig: () => Promise<AppConfig>;
+      openFile: (path: string) => any;
     };
   }
 }

@@ -18,12 +18,12 @@
   --secondary: #1f1f1f;
   --foreground: #313338;
   --foreground-secondary: #383a40;
-  --text-button: #B5BAC1;
+  --text-button: #b5bac1;
 }
 
 @layer base {
   body {
-    @apply bg-[var(--background)] font-sans text-[var(--primary)];
+    @apply bg-[var(--background)] font-sans text-[var(--primary)] overflow-hidden;
   }
   button,
   input,
@@ -42,6 +42,19 @@
 
 .no-scrollbar {
   scrollbar-width: none;
+}
+
+@keyframes progress {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+.animate-progress {
+  animation: progress 2s infinite;
 }
 
 *::-webkit-scrollbar-track {

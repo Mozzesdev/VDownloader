@@ -2,10 +2,8 @@ import axios from "axios";
 import { createWriteStream, WriteStream } from "node:fs";
 import { Format } from "../interfaces/Format.js";
 import path from "node:path";
-import { promisify } from "node:util";
-import { exec } from "node:child_process";
-import { unlink } from "node:fs/promises";
-const execAsync = promisify(exec);
+import { spawn } from "node:child_process";
+import { unlink, access } from "node:fs/promises";
 
 export const isDev = (): boolean => process.env.NODE_ENV === "development";
 
@@ -507,10 +505,21 @@ export function chooseFormat(
   return { videoFormat: bestVideoFormat, audioFormat: null };
 }
 
-export const resolveFilePath = (format: Format): string => {
+export const resolveFilePath = async (format: Format): Promise<string> => {
   const formatExtension = format.mimeType.match(/\/([^;]+)/)?.[1] ?? "unknown";
   const fileName = `${format.title}.${formatExtension}`;
-  const filePath = path.resolve(format.path as string, fileName);
+  let filePath = path.resolve(format.path as string, fileName);
+
+  let counter = 1;
+  const fileBaseName = fileName.substring(0, fileName.lastIndexOf('.'));
+  const fileExt = fileName.substring(fileName.lastIndexOf('.'));
+
+  // Verificar si el archivo ya existe y generar un nombre único
+  while (await fileExists(filePath)) {
+    filePath = path.resolve(format.path as string, `${fileBaseName}_${counter}${fileExt}`);
+    counter++;
+  }
+
   return filePath;
 };
 
@@ -524,39 +533,95 @@ export const resolveFilePath = (format: Format): string => {
 export const mergeVideoAndAudio = async (
   videoPath: string,
   audioPath: string,
-  outputPath: string
+  outputPath: string,
+  onProgress?: (progress: number) => void,
+  signal?: AbortSignal
 ): Promise<void> => {
-  // Verificar las extensiones para asegurarse de que los archivos sean compatibles
-  const videoExtension = path.extname(videoPath);
-  const audioExtension = path.extname(audioPath);
+  const ffmpegArgs = [
+    "-i",
+    videoPath,
+    "-i",
+    audioPath,
+    "-c:v",
+    "copy",
+    "-c:a",
+    "aac",
+    "-strict",
+    "experimental",
+    outputPath,
+  ];
 
-  if (![".mp4", ".mkv", ".mov", ".webm"].includes(videoExtension)) {
-    throw new Error(
-      `El archivo de video con extensión ${videoExtension} no es compatible.`
-    );
+  const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
+
+  ffmpegProcess.stderr.on("data", (data) => {
+    if (onProgress) {
+      onProgress(0);
+
+      if (data.toString().includes("muxing overhead")) {
+        onProgress(100);
+      }
+    }
+  });
+
+  if (signal) {
+    signal.addEventListener("abort", () => {
+      if (!ffmpegProcess.killed) {
+        ffmpegProcess.kill("SIGINT");
+      }
+    });
   }
 
-  if (
-    ![".mp4", ".mp3", ".aac", ".opus", ".m4a", ".ogg", ".wav"].includes(audioExtension)
-  ) {
-    throw new Error(
-      `El archivo de audio con extensión ${audioExtension} no es compatible.`
-    );
-  }
-
-  // Construir el comando FFmpeg
-  const ffmpegCommand = `ffmpeg -i "${videoPath}" -i "${audioPath}" -c:v copy -c:a aac -strict experimental "${outputPath}"`;
+  let wasCancelled = false;
 
   try {
-    // Ejecutar FFmpeg
-    await execAsync(ffmpegCommand);
+    await new Promise<void>((resolve, reject) => {
+      ffmpegProcess.on("close", (code, signal) => {
+        if (signal === "SIGINT") {
+          wasCancelled = true;
+          reject(new Error("Combinación cancelada por el usuario."));
+        } else if (code === 0) {
+          resolve();
+        } else {
+          reject(
+            new Error(
+              `FFmpeg falló con el código ${code || "desconocido"} y la señal ${
+                signal || "ninguna"
+              }.`
+            )
+          );
+        }
+      });
 
-    await unlink(videoPath);
-    await unlink(audioPath);
-
+      ffmpegProcess.on("error", (error) => {
+        reject(new Error(`Error al ejecutar FFmpeg: ${error.message}`));
+      });
+    });
   } catch (error: any) {
-    console.error(`Error al combinar video y audio: ${error.message}`);
-    throw new Error("No se pudo combinar los archivos de video y audio.");
+    console.error(`Error: ${error.message}`);
+    throw error;
+  } finally {
+    try {
+      await unlink(videoPath);
+      await unlink(audioPath);
+
+      const outputFile = await fileExists(outputPath);
+
+      if (wasCancelled && outputFile) {
+        await unlink(outputPath);
+      }
+    } catch (err: any) {
+      console.error(`Error al limpiar archivos: ${err.message}`);
+    }
+  }
+};
+
+// Verifica si un archivo existe
+const fileExists = async (path: string): Promise<boolean> => {
+  try {
+    await access(path);
+    return true;
+  } catch {
+    return false;
   }
 };
 

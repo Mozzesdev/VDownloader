@@ -44,7 +44,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
     className
   );
 
-  const textClassNames = cn("text-[12px] font-medium block", textVariants[variant]);
+  const textClassNames = cn("text-[12px] font-medium block text-nowrap", textVariants[variant]);
 
   const arrowPostionsClasses = {
     top: "bottom-[-4px] left-1/2 -translate-x-1/2",

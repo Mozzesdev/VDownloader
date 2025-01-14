@@ -1,9 +1,11 @@
 import { ipcMain, dialog, BrowserWindow } from "electron";
 import { downloadVideo, getVideoDetails } from "./video.js";
-import { getConfig, setConfig } from "./config.js";
+import { getConfig, openFile, setConfig } from "./config.js";
 import { getPlaylist } from "./playlist.js";
 
 export const handleIpc = (window: BrowserWindow) => {
+  const activeDownloads = new Map<string, AbortController>();
+
   ipcMain.handle("getConfig", async () => getConfig());
 
   ipcMain.handle("setConfig", async (_event, newConfig) =>
@@ -15,18 +17,33 @@ export const handleIpc = (window: BrowserWindow) => {
     async (_event, videoUrl) => await getVideoDetails(videoUrl)
   );
 
-  ipcMain.handle(
-    "downloadVideo",
-    async (event, videoDetails) =>
-      new Promise((resolve, reject) => {
-        downloadVideo(videoDetails, (progress) => {
-          // Enviar progreso al frontend
-          event.sender.send("download-progress", progress);
-        })
-          .then(resolve)
-          .catch(reject);
-      })
-  );
+  ipcMain.handle("cancelDownload", async (_event, videoId: string) => {
+    try {
+      const controller = activeDownloads.get(videoId);
+      if (controller) {
+        controller.abort();
+        activeDownloads.delete(videoId);
+      } else {
+        throw new Error();
+      }
+    } catch {
+      return;
+    }
+  });
+
+  ipcMain.handle("downloadVideo", async (event, video, dlId) => {
+    const progressChannel = `download_progress_${dlId}`;
+    const controller = new AbortController();
+    activeDownloads.set(dlId, controller);
+
+    return await downloadVideo(
+      video,
+      (progress) => event.sender.send(progressChannel, progress),
+      controller.signal
+    );
+  });
+
+  ipcMain.handle("openFile", async (_event, filePath) => openFile(filePath));
 
   ipcMain.handle(
     "getPlaylist",

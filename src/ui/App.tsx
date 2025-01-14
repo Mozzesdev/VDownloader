@@ -1,22 +1,22 @@
-// src/App.tsx
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Download,
+  DownloadIcon,
   Grid2X2,
   List,
   Loader2,
   Search,
   Settings,
+  X,
 } from "lucide-react";
 import { Input } from "./components/Input";
 import Button from "./components/Button";
-import ProgressBar from "./components/ProgressBar";
 import Alert, { AlertType } from "./components/Alert";
 import { PreferencesModal } from "./preferences/PreferencesModal";
 import Dropdown, { DropdownItem } from "./components/Dropdown";
-import { parseMediaString } from "./lib/utils";
-import no_video from "./assets/no_video.png";
+import { filterErrorMessage, parseMediaString, uuid } from "./lib/utils";
 import { Tooltip } from "./components/Tooltip";
+import SearchTab from "./components/icon/SearchTab";
+import DownloadManager, { type Download } from "./components/DownloadManager";
 
 interface FormValues {
   url: string;
@@ -38,11 +38,16 @@ type Video = {
 
 const App: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [playList, setPlayList] = useState<Video[]>([]);
+  const [playlist, setPlaylist] = useState<Video[]>([]);
   const [isGridView, setIsGridView] = useState(false);
   const [isLoading, setIsLoading] = useState({ value: false, info: "" });
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [expandedVideos, setExpandedVideos] = useState<Set<string>>(new Set());
+  const [downloads, setDownloads] = useState<Download[]>([]);
+
+  const removeDownload = (id: string) => {
+    setDownloads((prev) => prev.filter((d) => d.id !== id));
+  };
 
   const addAlert = (type: AlertType, message: string, delay = 5000) => {
     const newAlert: Alert = {
@@ -70,51 +75,20 @@ const App: React.FC = () => {
     setAlerts((prevAlerts) => prevAlerts.filter((alert) => alert.id !== id));
   };
 
-  const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
-
-  const playListRef = useRef(playList);
+  const playListRef = useRef(playlist);
 
   useEffect(() => {
-    playListRef.current = playList;
-  }, [playList]);
+    playListRef.current = playlist;
+  }, [playlist]);
 
   useEffect(() => {
     declareFormats(playListRef.current);
   }, [isGridView]);
 
-  useEffect(() => {
-    window.electronAPI.onDownloadProgress((progress) => {
-      setDownloadProgress(Number(progress));
-    });
-
-    return () => {
-      window.electronAPI.removeDownloadProgressListener();
-    };
-  }, []);
-
-  const downloadVideo = async (video: Video) => {
-    try {
-      setIsLoading({ info: `Descargando ${video.title}...`, value: true });
-      setDownloadProgress(0); // Inicializa el progreso
-
-      const response = await window.electronAPI.downloadVideo(video);
-      if (response.message.includes("ya ha sido descargado")) {
-        addAlert("warning", response.message);
-      } else {
-        addAlert("success", response.message);
-      }
-    } catch {
-      addAlert("error", "Error al descargar el video.");
-    } finally {
-      setIsLoading({ value: false, info: "" });
-      setDownloadProgress(null); // Limpia el progreso
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    setPlayList([]);
+    setPlaylist([]);
 
     const formData = new FormData(e.currentTarget);
     const values: FormValues = Object.fromEntries(
@@ -149,18 +123,14 @@ const App: React.FC = () => {
 
       if (details) {
         const newPlayList = Array.isArray(details) ? details : [details];
-        setPlayList(newPlayList);
+        setPlaylist(newPlayList);
         declareFormats(newPlayList);
       } else {
         throw new Error("No details found");
       }
     } catch (error: any) {
-      console.error(error);
-      addAlert(
-        "error",
-        error.message ||
-          "Ocurrió un error al procesar la URL. Verifica que sea válida."
-      );
+      console.error(error.message);
+      addAlert("error", filterErrorMessage(error.message));
     } finally {
       setIsLoading({ value: false, info: "" });
     }
@@ -179,13 +149,13 @@ const App: React.FC = () => {
         };
       });
 
-      setPlayList(playlistMap);
+      setPlaylist(playlistMap);
     }
   };
 
   function normalizeLabel(label: string): string {
-    if (label.includes('p')) {
-      return label.split('p')[0] + 'p';
+    if (label.includes("p")) {
+      return label.split("p")[0] + "p";
     }
     return label;
   }
@@ -242,7 +212,7 @@ const App: React.FC = () => {
       ...item,
       label: normalizeLabel(item.label),
     }));
-    
+
     const uniqueItems = normalizedItems.filter(
       (item: any, index: any, self: any) =>
         self.findIndex((i: any) => i.label === item.label) === index
@@ -283,10 +253,155 @@ const App: React.FC = () => {
     }
   };
 
+  const updateVideoFormat = (videoId: string, newFormat: DropdownItem) => {
+    setPlaylist((prevPlaylist) =>
+      prevPlaylist.map((video) =>
+        video.id === videoId
+          ? {
+              ...video,
+              formatSelected: newFormat,
+              size: calculateSize(
+                video.streamingData.adaptiveFormats,
+                newFormat
+              ),
+            }
+          : video
+      )
+    );
+  };
+
+  const calculateSize = (
+    adaptiveFormats: any[],
+    format: DropdownItem
+  ): string => {
+    const selectedFormat = adaptiveFormats.find(
+      (item) => item.itag === format.id
+    );
+
+    if (!selectedFormat) return "0 MB";
+
+    const audioFormat = adaptiveFormats.find((item) => item.audioQuality);
+
+    const selectedFormatSize = selectedFormat.contentLength
+      ? Number(selectedFormat.contentLength)
+      : 0;
+    const audioFormatSize =
+      audioFormat && audioFormat.contentLength
+        ? Number(audioFormat.contentLength)
+        : 0;
+
+    const totalSize = (selectedFormatSize + audioFormatSize) / (1024 * 1024);
+
+    return totalSize.toFixed(2) + " MB";
+  };
+
+  const downloadPlaylist = async () => {
+    if (!playlist || playlist.length === 0) return;
+
+    const initialDownloads = playlist.map((video) => {
+      const UUID = uuid();
+      return {
+        uuid: UUID,
+        id: video.id,
+        label: video.title,
+        progress: 0,
+        img: video.thumbnail,
+        size: video.size,
+        video,
+        cancel: () =>
+          window.electronAPI.cancelDownload(UUID).then(() => {
+            setDownloads((prevDownloads) =>
+              prevDownloads.filter((d) => d.uuid !== UUID)
+            );
+          }),
+      };
+    });
+
+    // Actualizar las descargas solo una vez
+    setDownloads((prevDownloads) => [...prevDownloads, ...initialDownloads]);
+
+    // Descargar los videos uno por uno, procesando el progreso de cada video de manera eficiente
+    for (const { video, uuid } of initialDownloads) {
+      await downloadVideo(video, uuid);
+    }
+  };
+
+  const downloadVideo = async (video: Video, downloadId?: string) => {
+    try {
+      const dlUUID = downloadId || uuid();
+
+      // Crear el objeto de descarga para el video
+      const download: Download = {
+        id: video.id,
+        uuid: dlUUID,
+        label: video.title,
+        progress: 0,
+        img: video.thumbnail,
+        size: video.size,
+        cancel: () =>
+          window.electronAPI.cancelDownload(downloadId).then(() => {
+            setDownloads((prevDownloads) =>
+              prevDownloads.filter((d) => d.uuid !== dlUUID)
+            );
+          }),
+      };
+
+      // Verificar si el video ya está en la lista de descargas
+      setDownloads((prevDownloads) => {
+        const existDownload = prevDownloads.find((v) => v.uuid === dlUUID);
+        if (!existDownload) {
+          return [...prevDownloads, download];
+        }
+        return prevDownloads;
+      });
+
+      const progressChannel = `download_progress_${dlUUID}`;
+
+      // Actualizar el progreso del video en tiempo real
+      window.electronAPI.onDLProgress(progressChannel, (progress: number) => {
+        setDownloads((prevDownloads) =>
+          prevDownloads.map((d) => (d.uuid === dlUUID ? { ...d, progress } : d))
+        );
+      });
+
+      // Llamada al backend para iniciar la descarga y pasar el signalId para la cancelación
+      const response = await window.electronAPI.downloadVideo(video, dlUUID);
+
+      // Actualizar el estado con el path del video una vez descargado
+      setDownloads((prevDownloads) =>
+        prevDownloads.map((d) =>
+          d.id === video.id ? { ...d, path: response?.path || "" } : d
+        )
+      );
+
+      window.electronAPI.rmDLProgress(progressChannel); // Limpiar el progreso
+
+      addAlert("success", response.message); // Mostrar alerta de éxito
+    } catch (error: any) {
+      console.log(error);
+      addAlert(
+        "error",
+        `Error al descargar el video: ${filterErrorMessage(error.message)}`
+      );
+    }
+  };
+
+  const removeVideo = (video: Video) => {
+    setPlaylist((prev) => prev.filter((v) => v.id !== video.id));
+  };
+
   return (
     <div className="mx-auto max-w-[1200px] container">
       {isModalOpen && (
         <PreferencesModal onClose={() => setIsModalOpen(false)} />
+      )}
+      {downloads?.length ? (
+        <DownloadManager
+          downloads={downloads}
+          removeDownload={removeDownload}
+        />
+      ) : (
+        ""
       )}
       <div className="fixed bottom-4 left-4">
         <Tooltip text="Configuración" position="right" variant="secondary">
@@ -306,17 +421,11 @@ const App: React.FC = () => {
                 <Loader2 className="animate-spin mr-2" />
                 {isLoading.info}
               </div>
-              {downloadProgress !== null && (
-                <div className="w-full max-w-md">
-                  <ProgressBar value={downloadProgress} className="mb-4" />
-                  <p className="text-sm text-gray-400 text-center">{`${downloadProgress}% Completado`}</p>
-                </div>
-              )}
             </div>
           </div>
         </>
       )}
-      <div className="fixed bottom-4 right-4 max-w-[420px] space-y-2">
+      <div className="fixed top-4 z-[100] right-4 max-w-[420px] space-y-2">
         {alerts.map((alert) => (
           <Alert
             key={alert.id}
@@ -361,17 +470,30 @@ const App: React.FC = () => {
                 )}
               </Button>
             </Tooltip>
+            {playlist?.length ? (
+              <Tooltip
+                text="Download all"
+                position="bottom"
+                variant="secondary"
+              >
+                <Button onClick={downloadPlaylist} className="!p-2 rounded-md">
+                  <DownloadIcon className="h-4 w-4" />
+                </Button>
+              </Tooltip>
+            ) : (
+              ""
+            )}
           </div>
         </div>
         <div
           className={`grid gap-4 ${
-            isGridView && playList.length
+            isGridView && playlist.length
               ? "sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
               : "grid-cols-1"
           }`}
         >
-          {playList.length ? (
-            playList.map((video) => (
+          {playlist.length ? (
+            playlist.map((video) => (
               <div
                 key={video.id}
                 className={`bg-[#202124] rounded-lg shadow-md ${
@@ -391,9 +513,15 @@ const App: React.FC = () => {
                   }`}
                 >
                   <div>
-                    <h3 className="text-lg font-semibold mb-2">
-                      {video.title}
-                    </h3>
+                    <div className="flex justify-between items-center gap-2">
+                      <h3 className="text-lg font-semibold mb-2">
+                        {video.title}
+                      </h3>
+                      <X
+                        className="cursor-pointer w-5 mb-2"
+                        onClick={() => removeVideo(video)}
+                      />
+                    </div>
                     {!isGridView ? (
                       <p className="text-gray-400 mb-2 line whitespace-pre-line">
                         {expandedVideos.has(video.id)
@@ -416,7 +544,7 @@ const App: React.FC = () => {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-zinc-400">
-                      {video.duration}
+                      {video.duration} - {video.size ?? "Desconocido"}
                     </span>
                     <div className="flex gap-2">
                       <Button
@@ -424,7 +552,7 @@ const App: React.FC = () => {
                         size="sm"
                         onClick={() => downloadVideo(video)}
                       >
-                        <Download className="inline-block h-4 w-4" />
+                        <DownloadIcon className="inline-block h-4 w-4" />
                         {isGridView ? "" : "Descargar"}
                       </Button>
                       <Dropdown
@@ -434,8 +562,9 @@ const App: React.FC = () => {
                         value={video?.items?.[0]}
                         showIcon={!isGridView}
                         onColumnChange={(value) => {
-                          if (value)
-                            video.formatSelected = value as DropdownItem;
+                          if (value) {
+                            updateVideoFormat(video.id, value as DropdownItem);
+                          }
                         }}
                       />
                     </div>
@@ -445,9 +574,9 @@ const App: React.FC = () => {
             ))
           ) : (
             <div className="py-5">
-              <img src={no_video} alt="" className="w-10 h-auto mx-auto" />
+              <SearchTab className="w-30 h-auto mx-auto fill-sky-500 mb-3" />
               <p className="text-gray-400 text-center mb-3">
-                No hay videos para mostrar.
+                Intenta buscar una URL valida de youtube.
               </p>
             </div>
           )}

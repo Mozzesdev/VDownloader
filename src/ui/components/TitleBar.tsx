@@ -10,7 +10,7 @@ const TitleBar = () => {
   const switchFocus = () => setSearchFocus(!searchFocus);
 
   return (
-    <div className="flex justify-between gap-2 items-center h-9 bg-background text-white select-none drag">
+    <div className="flex justify-between gap-2 items-center h-9 bg-background text-white select-none drag sticky top-0 bg-[var(--background)] z-50">
       <div className="pl-2 w-[120px]">
         <img src="./icon.png" className="h-auto w-5" />
       </div>

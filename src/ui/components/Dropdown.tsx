@@ -25,18 +25,20 @@ const Dropdown = ({
     if (onColumnChange) {
       onColumnChange(selectedOptions);
     }
-  }, [selectedOptions, onColumnChange]);
+  }, [selectedOptions]);
 
   useEffect(() => {
-    if (!selectedOptions) {
-      selectOption(value as DropdownItem, false);
-    } else {
-      const newOption = items.find(
-        ({ id }) => id === (selectedOptions as DropdownItem).id
-      );
-      selectOption(newOption as DropdownItem, false);
+    if (!onColumnChange) {
+      if (!selectedOptions) {
+        selectOption(value as DropdownItem, false);
+      } else {
+        const newOption = items.find(
+          ({ id }) => id === (selectedOptions as DropdownItem).id
+        );
+        selectOption(newOption as DropdownItem, false);
+      }
     }
-  }, [value]);
+  }, [value, onColumnChange]);
 
   const selectOption = (value: DropdownItem, withClose: boolean = true) => {
     if (type !== "single") {

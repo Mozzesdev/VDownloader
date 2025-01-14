@@ -1,6 +1,4 @@
-import path from "node:path";
-import { getConfig } from "./config.js";
-import axios from "axios";
+import { axiosI, getConfig } from "./config.js";
 // import { spawn } from "node:child_process";
 import fs from "node:fs";
 import {
@@ -14,7 +12,6 @@ import {
 } from "./utils/util.js";
 import { CLIENTS } from "./utils/constants.js";
 import { Format } from "./interfaces/Format.js";
-import { promisify } from "node:util";
 
 // const execAsync = util.promisify(exec);
 
@@ -46,46 +43,12 @@ export const formatDuration = (seconds: number): string => {
     : `${minutes}:${secs.toString().padStart(2, "0")}`;
 };
 
-// export const getVideoDetails = async (
-//   videoUrl: string
-// ): Promise<VideoDetails> => {
-//   const command = `yt-dlp --no-warnings --quiet --get-title --get-duration --get-thumbnail --format "bestvideo[height<=1080]+bestaudio" ${videoUrl}`;
-//   const { stdout } = await execAsync(command);
-//   const videoInfo = JSON.parse(stdout);
-
-//   const videoFormat = videoInfo.formats
-//     .filter(
-//       (format: any) =>
-//         format.vcodec !== "none" && format.height <= 1080 && format.filesize
-//     )
-//     .sort((a: any, b: any) => b.height - a.height)[0];
-
-//   const audioFormat = videoInfo.formats.find(
-//     (format: any) =>
-//       format.acodec !== "none" && format.vcodec === "none" && format.filesize
-//   );
-
-//   const totalSize =
-//     ((videoFormat?.filesize || 0) + (audioFormat?.filesize || 0)) /
-//     (1024 * 1024);
-
-//   return {
-//     id: videoInfo.id,
-//     url: videoUrl,
-//     title: videoInfo.title,
-//     duration: formatDuration(videoInfo.duration),
-//     thumbnail: videoInfo.thumbnail,
-//     size: `${totalSize.toFixed(2)} MB`,
-//   };
-// };
-
 export const getVideoDetails = async (
   videoUrl: string
 ): Promise<VideoDetails> => {
   const videoId = videoUrl.split("v=")[1]; // Extraer videoId del URL
 
-  const url =
-    "https://www.youtube.com/youtubei/v1/player?prettyPrint=false&alt=json";
+  const url = "https://www.youtube.com/youtubei/v1/player";
 
   const body = {
     context: {
@@ -93,14 +56,22 @@ export const getVideoDetails = async (
         clientName: CLIENTS.IOS.NAME,
         clientVersion: CLIENTS.IOS.VERSION,
         userAgent: CLIENTS.IOS.USER_AGENT,
+        deviceMake: CLIENTS.IOS.DEVICE_MAKE,
+        hl: CLIENTS.IOS.HL,
+        osName: CLIENTS.IOS.OS_NAME,
+        osVersion: CLIENTS.IOS.OS_VERSION,
+        timeZone: CLIENTS.IOS.TIME_ZONE,
+        gl: CLIENTS.IOS.GL,
+        utcOffsetMinutes: CLIENTS.IOS.UTC_OFFSET_MINUTES,
       },
     },
+    contentCheckOk: true,
     videoId,
   };
 
   try {
     // Realizar la solicitud HTTP a la página del video
-    const { data } = await axios.post(url, body, {
+    const { data } = await axiosI.post(url, body, {
       headers: {
         "User-Agent": body.context.client.userAgent,
         Accept: "*/*",
@@ -114,14 +85,15 @@ export const getVideoDetails = async (
       throw new Error("No se pudo obtener los detalles del video");
 
     // Extraer formatos de video
-    const formats = streamingData.formats || [];
-    const bestVideoFormat = formats
-      .filter((format: any) => format.hasAudio && format.hasVideo)
-      .sort((a: any, b: any) => b.width - a.width)[0]; // El formato con la mejor resolución
+    const formats = [
+      ...(streamingData.formats || []),
+      ...(streamingData.adaptiveFormats || []),
+    ];
+    const bestVideoFormat = formats[0];
 
     // Calcular el tamaño total (esto es solo un ejemplo, se requiere una mayor lógica)
     const size = bestVideoFormat?.contentLength
-      ? (parseInt(bestVideoFormat.contentLength) / (1024 * 1024)).toFixed(2) +
+      ? (parseInt(bestVideoFormat.contentLength) / (1024 * 1024)).toFixed(0) +
         " MB"
       : "N/A";
 
@@ -141,64 +113,17 @@ export const getVideoDetails = async (
 
     // Retornar todos los datos del video
     return videoInfo;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error al obtener los detalles del video:", error);
-    throw new Error("No se pudo obtener la información del video");
+    return Promise.reject(error.message);
   }
 };
 
-// export const downloadVideo = (
-//   videoDetails: VideoDetails,
-//   onProgress: (progress: string) => void
-// ): Promise<{ message?: string }> => {
-//   const config = getConfig();
-//   const videoTitle = videoDetails.title.replace(/[<>:"/\\|?*]+/g, "");
-//   const videoPath = path.resolve(config.downloadPath, `${videoTitle}.%(ext)s`);
-
-//   return new Promise((resolve, reject) => {
-//     const ytDlpProcess = spawn("yt-dlp", [
-//       "-f",
-//       "bestvideo[height<=1080]+bestaudio",
-//       "-o",
-//       videoPath,
-//       videoDetails.url,
-//     ]);
-
-//     let alreadyDownloaded = false;
-
-//     ytDlpProcess.stdout.on("data", (data: any) => {
-//       const output = data.toString();
-//       const progressMatch = output.match(/(\d{1,3}\.\d+)%/);
-//       if (progressMatch) onProgress(progressMatch[1]);
-//       if (output.includes("has already been downloaded")) {
-//         alreadyDownloaded = true;
-//         onProgress("100"); // Indicar que la descarga ya está completa
-//       }
-//     });
-
-//     ytDlpProcess.on("close", (code: any) => {
-//       if (alreadyDownloaded) {
-//         resolve({
-//           message: `El video "${videoTitle}" ya ha sido descargado.`,
-//         });
-//       } else if (code === 0) {
-//         resolve({
-//           message: `Descarga completada para el video: ${videoTitle}`,
-//         });
-//       } else {
-//         reject({
-//           success: false,
-//           message: `Error: yt-dlp terminó con el código ${code}`,
-//         });
-//       }
-//     });
-//   });
-// };
-
 export const downloadVideo = async (
   videoDetails: VideoDetails,
-  onProgress: (progress: string) => void
-): Promise<{ message: string }> => {
+  onProgress: (progress: number) => void,
+  signal: AbortSignal
+): Promise<{ message: string; path?: string }> => {
   try {
     const config = getConfig();
 
@@ -220,11 +145,7 @@ export const downloadVideo = async (
     ].find((fmat) => fmat.itag === videoDetails.formatSelected.id);
 
     const videOpts = {
-      type: formatSelected?.audioQuality
-        ? "audio"
-        : formatSelected?.qualityLabel
-        ? "video"
-        : "video+audio",
+      type: formatSelected?.audioQuality ? "audio" : "video+audio",
       quality: "best",
     };
 
@@ -236,35 +157,49 @@ export const downloadVideo = async (
     if (formatSelected?.audioQuality && !formatSelected.qualityLabel)
       (audioFormat as Format) = formatSelected;
 
+    // Si solo hay audio
     if (audioFormat && !videoFormat) {
       const audioUrl = await getDownloadUrl(audioFormat);
       const audio = {
         ...audioFormat,
         finalUrl: audioUrl,
         path: config.downloadPath,
-        title: `${videoTitle}_audio`,
+        title: `${videoTitle}`,
       };
 
-      audio.filePath = resolveFilePath(audio);
-      const result = await downloadFile(audio, onProgress);
+      audio.filePath = await resolveFilePath(audio);
+      const result = await downloadFile(audio, onProgress, signal); // Pasamos el signal
       return result;
     }
 
+    // Si solo hay video
     if (videoFormat && !audioFormat) {
       const videoUrl = await getDownloadUrl(videoFormat);
       const video = {
         ...videoFormat,
         finalUrl: videoUrl,
         path: config.downloadPath,
-        title: `${videoTitle}_video`,
+        title: `${videoTitle}`,
       };
 
-      video.filePath = resolveFilePath(video);
-      const result = await downloadFile(video, onProgress);
+      video.filePath = await resolveFilePath(video);
+      const result = await downloadFile(video, onProgress, signal); // Pasamos el signal
       return result;
     }
 
+    // Si hay tanto video como audio
     if (videoFormat && audioFormat) {
+      const totalProgress = { video: 0, audio: 0, merge: 0 };
+
+      const onOverallProgress = () => {
+        const overallProgress =
+          totalProgress.video * 0.495 +
+          totalProgress.audio * 0.495 +
+          totalProgress.merge * 0.01;
+
+        onProgress(overallProgress); // Actualizar progreso hacia el front
+      };
+
       // Descargar video
       const videoUrl = await getDownloadUrl(videoFormat);
       const video = {
@@ -273,8 +208,20 @@ export const downloadVideo = async (
         path: config.downloadPath,
         title: `${videoTitle}_video`,
       };
-      video.filePath = resolveFilePath(video);
-      await downloadFile(video, onProgress);
+      video.filePath = await resolveFilePath(video);
+
+      await downloadFile(
+        video,
+        (progress) => {
+          if (progress === -1) {
+            onProgress(-1);
+            throw new Error("Descarga cancelada");
+          }
+          totalProgress.video = progress;
+          onOverallProgress();
+        },
+        signal
+      );
 
       // Descargar audio
       const audioUrl = await getDownloadUrl(audioFormat);
@@ -284,35 +231,51 @@ export const downloadVideo = async (
         title: `${videoTitle}_audio`,
         finalUrl: audioUrl,
       };
-      audio.filePath = resolveFilePath(audio);
-      await downloadFile(audio, onProgress);
+      audio.filePath = await resolveFilePath(audio);
+
+      await downloadFile(
+        audio,
+        (progress) => {
+          if (progress === -1) {
+            onProgress(-1);
+            throw new Error("Descarga cancelada");
+          }
+          totalProgress.audio = progress;
+          onOverallProgress();
+        },
+        signal
+      );
 
       // Unir video y audio
-      const finalPath = path.resolve(config.downloadPath, `${videoTitle}.mp4`);
-      console.log("Unir video y audio...");
-      await mergeVideoAndAudio(video.filePath, audio.filePath, finalPath);
+      const finalFomart = {
+        title: videoTitle,
+        path: config.downloadPath,
+        mimeType: "video/mp4",
+      };
+
+      const finalPath = await resolveFilePath(finalFomart as Format);
+
+      await mergeVideoAndAudio(
+        video.filePath,
+        audio.filePath,
+        finalPath,
+        (progress) => {
+          totalProgress.merge = progress;
+          onOverallProgress();
+        },
+        signal
+      );
 
       return {
         message: `El video "${videoTitle}" y el audio se descargaron correctamente.`,
+        path: finalPath,
       };
     }
 
-    return {
-      message: `No se encontraron formatos disponibles para la descarga.`,
-    };
+    throw new Error("No se encontraron formatos disponibles para la descarga.");
   } catch (error: any) {
-    console.log(error)
-    return Promise.reject({
-      success: false,
-      message: `Error al descargar el video: ${error.message}`,
-    });
+    return Promise.reject(error.message);
   }
-};
-
-const delay = promisify(setTimeout);
-
-const shouldRetry = (status: number): boolean => {
-  return status >= 500 && status < 600; // Errores del servidor
 };
 
 const getChunkRange = (
@@ -324,15 +287,9 @@ const getChunkRange = (
   return `${start}-${end}`;
 };
 
-const downloadChunk = async (
-  url: string,
-  range: string,
-  retries: number,
-  maxRetries: number,
-  format: Format
-): Promise<Buffer> => {
+const downloadChunk = async (url: string, range: string): Promise<Buffer> => {
   try {
-    const response = await fetch(`${url}`, {
+    const response = await axiosI.get(url, {
       headers: {
         accept: "*/*",
         origin: "https://www.youtube.com",
@@ -343,37 +300,13 @@ const downloadChunk = async (
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
       },
+      responseType: "arraybuffer",
     });
 
-    if (!response.ok) {
-      if (response.status === 403) {
-        console.warn("403 Forbidden: Intentando regenerar la URL...");
-        format.finalUrl = await getDownloadUrl(format); // Regenera la URL
-        throw new Error("URL regenerada, reintentando descarga...");
-      }
-      if (shouldRetry(response.status)) {
-        throw new Error(
-          `Retriable error ${response.status}: ${response.statusText}`
-        );
-      } else {
-        throw new Error(
-          `Non-retriable error ${response.status}: ${response.statusText}`
-        );
-      }
-    }
-
-    const buffer = await response.arrayBuffer();
-    return Buffer.from(buffer);
+    const buffer = Buffer.from(response.data);
+    return buffer;
   } catch (error: any) {
-    if (retries >= maxRetries) {
-      throw new Error(`Error after ${retries} retries: ${error.message}`);
-    }
-
-    console.error(
-      `Error al descargar el rango ${range}: ${error.message}. Reintentando...`
-    );
-    await delay(2000 * retries);
-    return downloadChunk(url, range, retries + 1, maxRetries, format);
+    throw new Error(`Error descargando el video: ${error.message}`);
   }
 };
 
@@ -392,46 +325,66 @@ const deleteFileIfExists = (filePath: string): void => {
 
 export const downloadFile = async (
   format: Format,
-  onProgress: (progress: string) => void
-): Promise<{ message: string }> => {
-  const chunkSize = 10 * 1024 * 1024; // Tamaño del chunk (10 MB)
+  onProgress: (progress: number) => void,
+  signal?: AbortSignal
+): Promise<{ message: string; path?: string }> => {
+  const chunkSize = 5 * 1024 * 1024; // Tamaño del chunk (5 MB)
   const totalSize = parseInt(format.contentLength, 10);
-
-  if (fs.existsSync(format.filePath!)) {
-    return { message: `El archivo "${format.title}" ya ha sido descargado.` };
-  }
 
   const fileStream = fs.createWriteStream(format.filePath!);
   let chunkStart = 0;
 
+  // Escuchar eventos de error para manejar excepciones inesperadas
+  fileStream.on("error", (error) => {
+    console.error(`Error en el flujo de escritura: ${error.message}`);
+  });
+
   try {
     while (chunkStart < totalSize) {
-      const range = getChunkRange(chunkStart, chunkSize, totalSize);
-      const chunk = await downloadChunk(
-        format.finalUrl as string,
-        range,
-        0,
-        3,
-        format
-      );
+      // Verificar si el signal ha sido abortado
+      if (signal?.aborted) {
+        onProgress(-1); // Notificar cancelación
+        // Cerrar el flujo con `end()` para garantizar que no haya escrituras pendientes
+        fileStream.end(() => fileStream.destroy());
+        throw new Error("Descarga cancelada por el usuario.");
+      }
 
-      fileStream.write(chunk);
+      const range = getChunkRange(chunkStart, chunkSize, totalSize);
+      const chunk = await downloadChunk(format.finalUrl as string, range);
+
+      // Verificar antes de escribir si el flujo sigue activo
+      if (!fileStream.destroyed) {
+        const canWrite = fileStream.write(chunk);
+        if (!canWrite) {
+          // Si el flujo está lleno, espera a que drene
+          await new Promise((resolve) => fileStream.once("drain", resolve));
+        }
+      } else {
+        throw new Error("El flujo fue destruido prematuramente.");
+      }
+
       chunkStart += chunk.length;
 
+      // Calcular y actualizar el progreso
       const progress = ((chunkStart / totalSize) * 100).toFixed(2);
-      onProgress(progress);
+      onProgress(+progress);
     }
 
+    // Finalizar correctamente el flujo
     fileStream.end();
     return {
       message: `Descarga completada: ${format.title}\nFormato: ${
         format.qualityLabel
       }, Tamaño: ${(totalSize / (1024 * 1024)).toFixed(2)} MB`,
+      path: format.filePath,
     };
   } catch (error: any) {
-    fileStream.destroy();
+    // Asegurarte de destruir el flujo en caso de error
+    if (!fileStream.destroyed) {
+      fileStream.destroy();
+    }
     deleteFileIfExists(format.filePath!);
-    throw new Error(`Error al descargar el archivo: ${error.message}`);
+    throw new Error(error.message);
   }
 };
 

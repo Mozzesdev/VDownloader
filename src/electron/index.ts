@@ -17,6 +17,7 @@ const createWindow = () => {
     },
   });
 
+  win.maximize();
   win.setMenu(null);
 
   globalShortcut.register("CmdOrCtrl+Shift+C", () => {

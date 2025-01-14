@@ -4,7 +4,14 @@ export const CLIENTS = Object.freeze({
     NAME: 'IOS',
     VERSION: '19.29.1',
     USER_AGENT: 'com.google.ios.youtube/19.29.1 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X;)"',
-    DEVICE_MODEL: 'iPhone16,2'
+    DEVICE_MODEL: 'iPhone16,2',
+    DEVICE_MAKE: "Apple",
+    HL: "en",
+    OS_NAME: "iPhone",
+    OS_VERSION: "17.5.1.21F90",
+    TIME_ZONE: "UTC",
+    GL: "US",
+    UTC_OFFSET_MINUTES: 0
   },
   WEB: {
     NAME_ID: '1',
@@ -76,3 +83,5 @@ export const CLIENTS = Object.freeze({
     STATIC_VISITOR_ID: '6zpwvWUNAco'
   }
 });
+
+export const PORT = 8080;
