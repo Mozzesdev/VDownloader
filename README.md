@@ -86,5 +86,5 @@ This project is licensed under the [MIT License](LICENSE). You can use, modify, 
 If you have questions, suggestions, or feedback, feel free to reach out:
 
 - GitHub: [Mozzesdev](https://github.com/Mozzesdev)
-- Email: *(Optional, add an email if you'd like to share it)*
+- Discord: #winflix
 
