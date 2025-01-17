@@ -81,8 +81,10 @@ export const getVideoDetails = async (
 
     const { videoDetails, streamingData } = data;
 
-    if (!videoDetails)
+    if (!videoDetails) {
+      console.log(data);
       throw new Error("No se pudo obtener los detalles del video");
+    }
 
     // Extraer formatos de video
     const formats = [

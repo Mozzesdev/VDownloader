@@ -39,7 +39,7 @@ export default function DownloadManager({
           </button>
         </div>
         {!isMinimized && (
-          <div className="px-3 pt-3 max-h-72 overflow-y-auto">
+          <div className="px-3 pt-3 max-h-72 overflow-y-auto no-scrollbar">
             {downloads.map((download: Download) => (
               <DownloadItem
                 key={download.id}

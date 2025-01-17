@@ -26,7 +26,7 @@ declare global {
       minimize: () => void;
       maximize: () => void;
       close: () => void;
-      setConfig: (config: Partial<AppConfig>) => Promise<{ success: boolean }>;
+      setConfig: (config: Partial<AppConfig>) => Promise<any>;
       getConfig: () => Promise<AppConfig>;
       openFile: (path: string) => any;
     };

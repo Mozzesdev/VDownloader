@@ -1,5 +1,6 @@
 import { Minus, Search, Square, X } from "lucide-react";
 import { useState } from "react";
+import logo from "../../../icon.png"
 
 const TitleBar = () => {
   const [searchFocus, setSearchFocus] = useState(false);
@@ -12,7 +13,7 @@ const TitleBar = () => {
   return (
     <div className="flex justify-between gap-2 items-center h-9 bg-background text-white select-none drag sticky top-0 bg-[var(--background)] z-50">
       <div className="pl-2 w-[120px]">
-        <img src="./icon.png" className="h-auto w-5" />
+        <img src={logo} className="h-auto w-5" />
       </div>
 
       <div className="flex items-center justify-center relative hover:bg-[#383838] cursor-pointer bg-[#333333] text-[#CCCCCC] h-6 px-2 py-1 space-x-2 no-drag rounded-lg w-full max-w-[450px] border border-solid border-zinc-600">

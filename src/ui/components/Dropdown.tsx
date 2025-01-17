@@ -65,7 +65,7 @@ const Dropdown = ({
   };
 
   const baseStyles =
-    "font-semibold group rounded-md relative z-0 cursor-pointer transition-all duration-200 text-nowrap";
+    "font-semibold group rounded-sm relative z-0 cursor-pointer transition-all duration-200 text-nowrap";
 
   const bgVariants = {
     primary: "bg-[var(--foreground-secondary)] hover:bg-primary/50",
@@ -106,7 +106,7 @@ const Dropdown = ({
           open
             ? "max-h-26 duration-500 opacity-100"
             : "max-h-0 pointer-events-none duration-300 border-transparent opacity-0",
-          "absolute bottom-0 left-0 bg-[#21262d] border-b border-l border-r no-scrollbar border-[#30363d] border-t-0 overflow-y-auto overflow-x-hidden rounded-2xl transition-[max-height_opacity] rounded-t-none w-full translate-y-full flex flex-col"
+          "absolute bottom-0 left-0 bg-[#21262d] border-b border-l border-r no-scrollbar border-[#30363d] border-t-0 overflow-y-auto overflow-x-hidden rounded-sm transition-[max-height_opacity] rounded-t-none w-full translate-y-full flex flex-col"
         )}
       >
         {items.map((option) => {

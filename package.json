@@ -1,10 +1,11 @@
 {
   "name": "v-downloader",
+  "productName": "VDownloader",
   "private": true,
   "version": "0.1.0",
   "type": "module",
   "main": "dist-electron/index.js",
-  "description": "Una aplicación para descargar videos.",
+  "description": "Una aplicación para descargar videos de youtube.",
   "author": "Winflix",
   "scripts": {
     "dev": "npm-run-all --parallel dev:react dev:electron",

@@ -13,8 +13,10 @@ const createWindow = () => {
     frame: false,
     webPreferences: {
       preload: getPreloadPath(),
+      contextIsolation: true,
       nodeIntegration: true,
     },
+    title: "VDownloader",
   });
 
   win.maximize();
@@ -32,6 +34,8 @@ const createWindow = () => {
 
   return win;
 };
+
+if (process.platform === "win32") app.setAppUserModelId(app.name);
 
 app.whenReady().then(() => {
   const win = createWindow();

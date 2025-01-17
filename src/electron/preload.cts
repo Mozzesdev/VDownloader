@@ -13,6 +13,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getPlaylist: (url: string): Promise<any> =>
     ipcRenderer.invoke("getPlaylist", url),
   getVideo: (url: string): Promise<any> => ipcRenderer.invoke("getVideo", url),
+  getConfig: (): Promise<any>  => ipcRenderer.invoke("getConfig"),
+  setConfig: (config: any): Promise<any>  => ipcRenderer.invoke("setConfig", config),
   onDLProgress: (channel: string, callback: (progress: number) => void) =>
     ipcRenderer.on(channel, (_event, data) => callback(data)),
   rmDLProgress: (channel: string) => ipcRenderer.removeAllListeners(channel),
@@ -20,5 +22,5 @@ contextBridge.exposeInMainWorld("electronAPI", {
   minimize: () => ipcRenderer.send("minimize"),
   maximize: () => ipcRenderer.send("maximize"),
   close: () => ipcRenderer.send("close"),
-  openFile: (path: string) => ipcRenderer.invoke("openFile", path),
+  openFile: (path: string) => ipcRenderer.invoke("openFile", path)
 });

@@ -8,15 +8,15 @@ import {
   Settings,
   X,
 } from "lucide-react";
-import { Input } from "./components/Input";
+import Input from "./components/Input";
 import Button from "./components/Button";
 import Alert, { AlertType } from "./components/Alert";
-import { PreferencesModal } from "./preferences/PreferencesModal";
 import Dropdown, { DropdownItem } from "./components/Dropdown";
 import { filterErrorMessage, parseMediaString, uuid } from "./lib/utils";
 import { Tooltip } from "./components/Tooltip";
 import SearchTab from "./components/icon/SearchTab";
 import DownloadManager, { type Download } from "./components/DownloadManager";
+import { Preferences, PreferencesModal } from "./preferences/PreferencesModal";
 
 interface FormValues {
   url: string;
@@ -44,6 +44,7 @@ const App: React.FC = () => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [expandedVideos, setExpandedVideos] = useState<Set<string>>(new Set());
   const [downloads, setDownloads] = useState<Download[]>([]);
+  const [preferences, setPreferences] = useState<Preferences>();
 
   const removeDownload = (id: string) => {
     setDownloads((prev) => prev.filter((d) => d.id !== id));
@@ -80,6 +81,15 @@ const App: React.FC = () => {
   useEffect(() => {
     playListRef.current = playlist;
   }, [playlist]);
+
+  const getPreferences = async () => {
+    const prefe = await window.electronAPI.getConfig();
+    setPreferences(prefe as Preferences);
+  };
+
+  useEffect(() => {
+    getPreferences();
+  }, []);
 
   useEffect(() => {
     declareFormats(playListRef.current);
@@ -377,6 +387,10 @@ const App: React.FC = () => {
       window.electronAPI.rmDLProgress(progressChannel); // Limpiar el progreso
 
       addAlert("success", response.message); // Mostrar alerta de éxito
+      new Notification("Descarga completada", {
+        body: `El video "${video.title}" se descargó con éxito.`,
+        icon: "../../icon.png",
+      });
     } catch (error: any) {
       console.log(error);
       addAlert(
@@ -390,10 +404,26 @@ const App: React.FC = () => {
     setPlaylist((prev) => prev.filter((v) => v.id !== video.id));
   };
 
+  const onSavePre = async (prefe: any) => {
+    try {
+      const pre = await window.electronAPI.setConfig(prefe);
+      setPreferences(pre);
+      addAlert("success", "Saved successfully.");
+    } catch (error: any) {
+      console.log(error);
+      addAlert("error", "Error on saving preferences.");
+    }
+  };
+
   return (
     <div className="mx-auto max-w-[1200px] container">
       {isModalOpen && (
-        <PreferencesModal onClose={() => setIsModalOpen(false)} />
+        <PreferencesModal
+          onSave={onSavePre}
+          isOpen={isModalOpen}
+          initialPreferences={preferences!}
+          onClose={() => setIsModalOpen(false)}
+        />
       )}
       {downloads?.length ? (
         <DownloadManager
@@ -439,10 +469,10 @@ const App: React.FC = () => {
         <form onSubmit={handleSubmit}>
           <div className="flex gap-2">
             <Input
+              name="url"
               type="url"
               placeholder="Ingresa la URL del video o playlist"
-              name="url"
-            />
+              />
             <Button type="submit" size="sm">
               Buscar
               <Search className="inline-block w-4" />
@@ -488,7 +518,7 @@ const App: React.FC = () => {
         <div
           className={`grid gap-4 ${
             isGridView && playlist.length
-              ? "sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+              ? "sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 max-[640px]:grid-cols-1"
               : "grid-cols-1"
           }`}
         >
@@ -514,7 +544,7 @@ const App: React.FC = () => {
                 >
                   <div>
                     <div className="flex justify-between items-center gap-2">
-                      <h3 className="text-lg font-semibold mb-2">
+                      <h3 className="text-lg font-semibold mb-2 truncate">
                         {video.title}
                       </h3>
                       <X

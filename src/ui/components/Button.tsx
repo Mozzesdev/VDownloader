@@ -16,7 +16,7 @@ export default function Button({
     "font-semibold group rounded-md relative z-0 cursor-pointer transition-all duration-200 text-nowrap";
 
   const bgVariants = {
-    primary: "bg-[var(--foreground-secondary)] hover:bg-primary/50",
+    primary: "bg-[var(--foreground-secondary)] hover:bg-[var(--foreground-secondary)]/50",
     secondary:
       "bg-[var(--secondary)] hover:bg-secondary/80",
     outline:

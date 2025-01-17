@@ -1,24 +1,26 @@
 {
-    "appId": "com.winflix.v-downloader",
-    "files": [
-      "dist-electron",
-      "dist-react"
+  "appId": "com.winflix.vDownloader",
+  "files": [
+    "dist-electron/**/*",
+    "dist-react/**/*"
+  ],
+  "extraFiles": [
+    "icon.png"
+  ],
+  "icon": "./icon.png",
+  "mac": {
+    "target": "dmg",
+    "sign": false
+  },
+  "linux": {
+    "target": "AppImage",
+    "category": "Utility"
+  },
+  "win": {
+    "target": [
+      "portable",
+      "msi"
     ],
-    "icon": "./icon",
-    "mac": {
-      "target": "dmg",
-      "sign": false
-    },
-    "linux": {
-      "target": "AppImage",
-      "category": "Utility"
-    },
-    "win": {
-      "target": [
-        "portable",
-        "msi"
-      ],
-      "sign": false
-    }
+    "sign": false
   }
-  
+}
