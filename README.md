@@ -1,50 +1,90 @@
-# React + TypeScript + Vite
+# VDownloader
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**VDownloader** is an application for downloading videos, playlists, and shorts from YouTube. It offers an intuitive and powerful experience to manage your downloads efficiently and select from multiple video and audio formats.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Main Features
 
-## Expanding the ESLint configuration
+- **Video Downloads**: Download any YouTube video with just the link.
+- **Playlist Support**: Automatically download entire playlists.
+- **Shorts**: Compatible with YouTube short videos.
+- **Multiple Formats**: Choose from different video formats (MP4, MKV, etc.) and audio formats (MP3, AAC, etc.).
+- **Download Manager**: View progress, pause, resume, or cancel downloads directly from the interface.
+- **Notifications**: Receive alerts when downloads are complete or if an error occurs.
+- **User-Friendly**: Designed to be simple and accessible.
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+---
 
-- Configure the top-level `parserOptions` property like this:
+## Screenshots
+*(Add some screenshots of the application showcasing its main features here.)*
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+---
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+## Installation
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/Mozzesdev/VDownloader.git
+   ```
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
-```
+2. Navigate to the project directory:
+   ```bash
+   cd VDownloader
+   ```
+
+3. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+4. Start the application:
+   ```bash
+   npm start
+   ```
+
+---
+
+## Technologies Used
+
+- **Electron**: For building the desktop application.
+- **React**: For the user interface.
+- **TypeScript**: For safer and structured development.
+- **YouTube API**: To access video and playlist information.
+
+---
+
+## Contributions
+
+If you want to contribute to **VDownloader**, follow these steps:
+
+1. Fork this repository.
+2. Create a branch for your new feature:
+   ```bash
+   git checkout -b new-feature
+   ```
+3. Make your changes and commit them:
+   ```bash
+   git commit -m "Add new feature"
+   ```
+4. Push your changes:
+   ```bash
+   git push origin new-feature
+   ```
+5. Open a pull request in this repository.
+
+---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE). You can use, modify, and distribute it, as long as you give credit to **Mozzesdev**.
+
+---
+
+## Contact
+
+If you have questions, suggestions, or feedback, feel free to reach out:
+
+- GitHub: [Mozzesdev](https://github.com/Mozzesdev)
+- Email: *(Optional, add an email if you'd like to share it)*
+
