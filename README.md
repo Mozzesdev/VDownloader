@@ -17,33 +17,10 @@
 ---
 
 ## Screenshots
-*(Add some screenshots of the application showcasing its main features here.)*
 
----
+| ![{631DF813-8422-4581-9F65-A2973097AB38}](https://github.com/user-attachments/assets/547ab4e9-888f-4baa-88ab-35141921db51) | ![{6EFD1304-57FA-4017-9F13-A8D3DB4C0E30}](https://github.com/user-attachments/assets/6235af16-7fd6-4481-8bed-2291d03c5c5c) |
+|-----------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
 
-## Installation
-
-1. Clone this repository:
-   ```bash
-   git clone https://github.com/Mozzesdev/VDownloader.git
-   ```
-
-2. Navigate to the project directory:
-   ```bash
-   cd VDownloader
-   ```
-
-3. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-4. Start the application:
-   ```bash
-   npm start
-   ```
-
----
 
 ## Technologies Used
 
@@ -86,5 +63,5 @@ This project is licensed under the [MIT License](LICENSE). You can use, modify, 
 If you have questions, suggestions, or feedback, feel free to reach out:
 
 - GitHub: [Mozzesdev](https://github.com/Mozzesdev)
-- Email: *(Optional, add an email if you'd like to share it)*
+- Discord: #winflix
 
