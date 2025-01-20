@@ -63,7 +63,7 @@ export function PreferencesModal({
       <div className="bg-[var(--background-secondary)] rounded-lg shadow-xl max-w-md w-full">
         <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-            Preferencias
+            Preferences
           </h2>
           <button
             onClick={onClose}
@@ -85,7 +85,7 @@ export function PreferencesModal({
               htmlFor="downloadPath"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >
-              Ruta de descarga
+              Download path
             </label>
             <span className="text-sm text-zinc-400 font-medium cursor-pointer hover:text-zinc-300 transition">
               {preferences.downloadPath}
@@ -135,7 +135,7 @@ export function PreferencesModal({
           />
         </div>
         <div className="flex justify-end p-4">
-          <Button onClick={handleSave}>Guardar</Button>
+          <Button onClick={handleSave}>Save</Button>
         </div>
       </div>
     </div>

@@ -57,7 +57,7 @@ const App: React.FC = () => {
       message,
       delay,
     };
-    setAlerts((prevAlerts) => [...prevAlerts, newAlert]);
+    setAlerts((prev) => [...prev, newAlert]);
   };
 
   const toggleExpanded = (videoId: string) => {
@@ -73,7 +73,7 @@ const App: React.FC = () => {
   };
 
   const removeAlert = (id: number) => {
-    setAlerts((prevAlerts) => prevAlerts.filter((alert) => alert.id !== id));
+    setAlerts((prev) => prev.filter((alert) => alert.id !== id));
   };
 
   const playListRef = useRef(playlist);
@@ -97,7 +97,6 @@ const App: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
     setPlaylist([]);
 
     const formData = new FormData(e.currentTarget);
@@ -106,15 +105,14 @@ const App: React.FC = () => {
     ) as unknown as FormValues;
 
     if (!values?.url) {
-      addAlert("error", "Agrega una URL, es requerido.");
+      addAlert("error", "URL is required.");
       return;
     }
 
     try {
-      setIsLoading({ info: "Obteniendo informacion...", value: true });
+      setIsLoading({ info: "Fetching information...", value: true });
 
       const urlType = determineYouTubeUrlType(values.url);
-
       const fetchDetails = async (url: string) => {
         switch (urlType) {
           case "video":
@@ -132,9 +130,9 @@ const App: React.FC = () => {
       const details = await fetchDetails(values.url);
 
       if (details) {
-        const newPlayList = Array.isArray(details) ? details : [details];
-        setPlaylist(newPlayList);
-        declareFormats(newPlayList);
+        const newPlaylist = Array.isArray(details) ? details : [details];
+        setPlaylist(newPlaylist);
+        declareFormats(newPlaylist);
       } else {
         throw new Error("No details found");
       }
@@ -146,9 +144,9 @@ const App: React.FC = () => {
     }
   };
 
-  const declareFormats = (updatedPlayList: Video[]) => {
-    if (updatedPlayList.length) {
-      const playlistMap = updatedPlayList.map((video) => {
+  const declareFormats = (updatedPlaylist: Video[]) => {
+    if (updatedPlaylist.length) {
+      const playlistMap = updatedPlaylist.map((video) => {
         const formats: any = [
           ...(video.streamingData.formats || []),
           ...(video.streamingData.adaptiveFormats || []),
@@ -158,16 +156,12 @@ const App: React.FC = () => {
           items: convertFormatsToDropdownItem(formats, isGridView),
         };
       });
-
       setPlaylist(playlistMap);
     }
   };
 
   function normalizeLabel(label: string): string {
-    if (label.includes("p")) {
-      return label.split("p")[0] + "p";
-    }
-    return label;
+    return label.includes("p") ? label.split("p")[0] + "p" : label;
   }
 
   const convertFormatsToDropdownItem = (
@@ -176,24 +170,20 @@ const App: React.FC = () => {
   ): DropdownItem[] => {
     if (!formats) return [];
 
-    // Ordena los formatos por prioridad antes de mapear
     const sortedFormats = formats.sort((a: any, b: any) => {
       const getPriority = (format: any) => {
-        if (format.audioQuality && format.qualityLabel) return 1; // Audio y video
-        if (format.audioQuality && !format.qualityLabel) return 3; // Solo audio
-        if (format.qualityLabel && !format.audioQuality) return 2; // Solo video
-        return 4; // Cualquier otro caso
+        if (format.audioQuality && format.qualityLabel) return 1;
+        if (format.audioQuality && !format.qualityLabel) return 3;
+        if (format.qualityLabel && !format.audioQuality) return 2;
+        return 4;
       };
-
-      return getPriority(a) - getPriority(b); // Orden ascendente
+      return getPriority(a) - getPriority(b);
     });
 
-    // Mapea los formatos ordenados
     const items = sortedFormats.map((format: any) => {
       const mediaStream = parseMediaString(format.mimeType);
 
       if (format.audioQuality && !format.qualityLabel) {
-        // Solo audio
         return {
           id: format.itag,
           value: format.itag,
@@ -204,7 +194,6 @@ const App: React.FC = () => {
       }
 
       if (format.qualityLabel && !format.audioQuality) {
-        // Solo video
         return {
           id: format.itag,
           value: format.itag,
@@ -214,7 +203,6 @@ const App: React.FC = () => {
         };
       }
 
-      // Audio y video
       return null;
     });
 
@@ -223,15 +211,12 @@ const App: React.FC = () => {
       label: normalizeLabel(item.label),
     }));
 
-    const uniqueItems = normalizedItems.filter(
+    return normalizedItems.filter(
       (item: any, index: any, self: any) =>
         self.findIndex((i: any) => i.label === item.label) === index
     );
-
-    return uniqueItems;
   };
 
-  // Función para determinar si una URL de YouTube es un video o una playlist
   const determineYouTubeUrlType = (
     url: string
   ): "video" | "playlist" | "videoInPlaylist" | null => {
@@ -241,31 +226,25 @@ const App: React.FC = () => {
         parsedUrl.hostname !== "www.youtube.com" &&
         parsedUrl.hostname !== "youtu.be"
       ) {
-        return null; // No es una URL válida de YouTube
+        return null;
       }
 
-      // Analizar los parámetros de la URL
       const videoId = parsedUrl.searchParams.get("v");
       const playlistId = parsedUrl.searchParams.get("list");
 
-      if (videoId && playlistId) {
-        return "videoInPlaylist"; // Es un video dentro de una playlist
-      } else if (videoId) {
-        return "video"; // Es un video
-      } else if (playlistId) {
-        return "playlist"; // Es una playlist
-      } else {
-        return null; // No es ni video ni playlist
-      }
+      if (videoId && playlistId) return "videoInPlaylist";
+      if (videoId) return "video";
+      if (playlistId) return "playlist";
+      return null;
     } catch (error) {
-      console.error("Error al analizar la URL:", error);
-      return null; // URL inválida
+      console.error("Error parsing URL:", error);
+      return null;
     }
   };
 
   const updateVideoFormat = (videoId: string, newFormat: DropdownItem) => {
-    setPlaylist((prevPlaylist) =>
-      prevPlaylist.map((video) =>
+    setPlaylist((prev) =>
+      prev.map((video) =>
         video.id === videoId
           ? {
               ...video,
@@ -291,7 +270,6 @@ const App: React.FC = () => {
     if (!selectedFormat) return "0 MB";
 
     const audioFormat = adaptiveFormats.find((item) => item.audioQuality);
-
     const selectedFormatSize = selectedFormat.contentLength
       ? Number(selectedFormat.contentLength)
       : 0;
@@ -301,12 +279,11 @@ const App: React.FC = () => {
         : 0;
 
     const totalSize = (selectedFormatSize + audioFormatSize) / (1024 * 1024);
-
-    return totalSize.toFixed(2) + " MB";
+    return totalSize.toFixed(0) + " MB";
   };
 
   const downloadPlaylist = async () => {
-    if (!playlist || playlist.length === 0) return;
+    if (!playlist.length) return;
 
     const initialDownloads = playlist.map((video) => {
       const UUID = uuid();
@@ -320,17 +297,13 @@ const App: React.FC = () => {
         video,
         cancel: () =>
           window.electronAPI.cancelDownload(UUID).then(() => {
-            setDownloads((prevDownloads) =>
-              prevDownloads.filter((d) => d.uuid !== UUID)
-            );
+            setDownloads((prev) => prev.filter((d) => d.uuid !== UUID));
           }),
       };
     });
 
-    // Actualizar las descargas solo una vez
-    setDownloads((prevDownloads) => [...prevDownloads, ...initialDownloads]);
+    setDownloads((prev) => [...prev, ...initialDownloads]);
 
-    // Descargar los videos uno por uno, procesando el progreso de cada video de manera eficiente
     for (const { video, uuid } of initialDownloads) {
       await downloadVideo(video, uuid);
     }
@@ -339,8 +312,6 @@ const App: React.FC = () => {
   const downloadVideo = async (video: Video, downloadId?: string) => {
     try {
       const dlUUID = downloadId || uuid();
-
-      // Crear el objeto de descarga para el video
       const download: Download = {
         id: video.id,
         uuid: dlUUID,
@@ -349,53 +320,45 @@ const App: React.FC = () => {
         img: video.thumbnail,
         size: video.size,
         cancel: () =>
-          window.electronAPI.cancelDownload(downloadId).then(() => {
-            setDownloads((prevDownloads) =>
-              prevDownloads.filter((d) => d.uuid !== dlUUID)
-            );
+          window.electronAPI.cancelDownload(dlUUID).then(() => {
+            setDownloads((prev) => prev.filter((d) => d.uuid !== dlUUID));
           }),
       };
 
-      // Verificar si el video ya está en la lista de descargas
-      setDownloads((prevDownloads) => {
-        const existDownload = prevDownloads.find((v) => v.uuid === dlUUID);
-        if (!existDownload) {
-          return [...prevDownloads, download];
+      setDownloads((prev) => {
+        if (!prev.find((v) => v.uuid === dlUUID)) {
+          return [...prev, download];
         }
-        return prevDownloads;
+        return prev;
       });
 
       const progressChannel = `download_progress_${dlUUID}`;
 
-      // Actualizar el progreso del video en tiempo real
       window.electronAPI.onDLProgress(progressChannel, (progress: number) => {
-        setDownloads((prevDownloads) =>
-          prevDownloads.map((d) => (d.uuid === dlUUID ? { ...d, progress } : d))
+        setDownloads((prev) =>
+          prev.map((d) => (d.uuid === dlUUID ? { ...d, progress } : d))
         );
       });
 
-      // Llamada al backend para iniciar la descarga y pasar el signalId para la cancelación
       const response = await window.electronAPI.downloadVideo(video, dlUUID);
 
-      // Actualizar el estado con el path del video una vez descargado
-      setDownloads((prevDownloads) =>
-        prevDownloads.map((d) =>
+      setDownloads((prev) =>
+        prev.map((d) =>
           d.id === video.id ? { ...d, path: response?.path || "" } : d
         )
       );
 
-      window.electronAPI.rmDLProgress(progressChannel); // Limpiar el progreso
-
-      addAlert("success", response.message); // Mostrar alerta de éxito
-      new Notification("Descarga completada", {
-        body: `El video "${video.title}" se descargó con éxito.`,
+      window.electronAPI.rmDLProgress(progressChannel);
+      addAlert("success", response.message);
+      new Notification("Download complete", {
+        body: `The video "${video.title}" was successfully downloaded.`,
         icon: "../../icon.png",
       });
     } catch (error: any) {
-      console.log(error);
+      console.error(error);
       addAlert(
         "error",
-        `Error al descargar el video: ${filterErrorMessage(error.message)}`
+        `Error downloading video: ${filterErrorMessage(error.message)}`
       );
     }
   };
@@ -404,14 +367,14 @@ const App: React.FC = () => {
     setPlaylist((prev) => prev.filter((v) => v.id !== video.id));
   };
 
-  const onSavePre = async (prefe: any) => {
+  const onSavePreferences = async (prefs: any) => {
     try {
-      const pre = await window.electronAPI.setConfig(prefe);
-      setPreferences(pre);
-      addAlert("success", "Saved successfully.");
+      const updatedPrefs = await window.electronAPI.setConfig(prefs);
+      setPreferences(updatedPrefs);
+      addAlert("success", "Preferences saved successfully.");
     } catch (error: any) {
-      console.log(error);
-      addAlert("error", "Error on saving preferences.");
+      console.error(error);
+      addAlert("error", "Error saving preferences.");
     }
   };
 
@@ -419,7 +382,7 @@ const App: React.FC = () => {
     <div className="mx-auto max-w-[1200px] container">
       {isModalOpen && (
         <PreferencesModal
-          onSave={onSavePre}
+          onSave={onSavePreferences}
           isOpen={isModalOpen}
           initialPreferences={preferences!}
           onClose={() => setIsModalOpen(false)}
@@ -434,7 +397,7 @@ const App: React.FC = () => {
         ""
       )}
       <div className="fixed bottom-4 left-4">
-        <Tooltip text="Configuración" position="right" variant="secondary">
+        <Tooltip text="Settings" position="right" variant="secondary">
           <Button
             onClick={() => setIsModalOpen(true)}
             className="!p-2 rounded-md"
@@ -471,10 +434,10 @@ const App: React.FC = () => {
             <Input
               name="url"
               type="url"
-              placeholder="Ingresa la URL del video o playlist"
-              />
+              placeholder="Enter the video or playlist URL"
+            />
             <Button type="submit" size="sm">
-              Buscar
+              Search
               <Search className="inline-block w-4" />
             </Button>
           </div>
@@ -482,10 +445,10 @@ const App: React.FC = () => {
       </div>
       <div className="mt-3 rounded-sm bg-[var(--foreground)] p-4">
         <div className="mb-4 flex justify-between items-center">
-          <h2 className="text-xl font-semibold">Lista de Videos</h2>
+          <h2 className="text-xl font-semibold">Video List</h2>
           <div className="flex gap-2">
             <Tooltip
-              text={isGridView ? "Lista" : "Cuadrícula"}
+              text={isGridView ? "List View" : "Grid View"}
               position="bottom"
               variant="secondary"
             >
@@ -502,7 +465,7 @@ const App: React.FC = () => {
             </Tooltip>
             {playlist?.length ? (
               <Tooltip
-                text="Download all"
+                text="Download All"
                 position="bottom"
                 variant="secondary"
               >
@@ -553,7 +516,7 @@ const App: React.FC = () => {
                       />
                     </div>
                     {!isGridView ? (
-                      <p className="text-gray-400 mb-2 line whitespace-pre-line">
+                      <p className="text-gray-400 mb-2 whitespace-pre-line">
                         {expandedVideos.has(video.id)
                           ? video.description
                           : `${video.description.slice(0, 100)}`}
@@ -563,8 +526,8 @@ const App: React.FC = () => {
                             onClick={() => toggleExpanded(video.id)}
                           >
                             {expandedVideos.has(video.id)
-                              ? "...Ver menos"
-                              : "...Ver más"}
+                              ? "...Show less"
+                              : "...Show more"}
                           </button>
                         )}
                       </p>
@@ -574,7 +537,7 @@ const App: React.FC = () => {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-zinc-400">
-                      {video.duration} - {video.size ?? "Desconocido"}
+                      {video.duration} - {video.size ?? "Unknown"}
                     </span>
                     <div className="flex gap-2">
                       <Button
@@ -583,11 +546,11 @@ const App: React.FC = () => {
                         onClick={() => downloadVideo(video)}
                       >
                         <DownloadIcon className="inline-block h-4 w-4" />
-                        {isGridView ? "" : "Descargar"}
+                        {isGridView ? "" : "Download"}
                       </Button>
                       <Dropdown
                         size="sm"
-                        label="Select format"
+                        label="Select Format"
                         items={video.items ?? []}
                         value={video?.items?.[0]}
                         showIcon={!isGridView}
@@ -606,7 +569,7 @@ const App: React.FC = () => {
             <div className="py-5">
               <SearchTab className="w-30 h-auto mx-auto fill-sky-500 mb-3" />
               <p className="text-gray-400 text-center mb-3">
-                Intenta buscar una URL valida de youtube.
+                Try searching with a valid YouTube URL.
               </p>
             </div>
           )}

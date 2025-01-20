@@ -2,7 +2,7 @@
   "name": "v-downloader",
   "productName": "VDownloader",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
   "main": "dist-electron/index.js",
   "description": "Una aplicación para descargar videos de youtube.",

@@ -58,7 +58,7 @@ function DownloadItem({
 }: {
   download: Download;
 }) {
-  const isCanceled = download?.progress === -1;
+  const hasError = download?.progress === -1;
   const isFinished = download?.progress >= 100;
   const isStand = download?.progress === 0;
 
@@ -105,7 +105,7 @@ function DownloadItem({
           className={cn(
             "text-[12px] text-zinc-400",
             isFinished && "text-green-400",
-            isCanceled && "text-red-400"
+            hasError && "text-red-400"
           )}
         >
           {download?.progress.toFixed(0) || 0}%{" "}
@@ -120,9 +120,9 @@ function DownloadItem({
               className={cn(
                 "bg-white rounded-full h-1 transition-all duration-300 ease-in-out",
                 isFinished && "bg-green-400",
-                isCanceled && "bg-red-400"
+                hasError && "bg-red-400"
               )}
-              style={{ width: `${isCanceled ? 100 : download?.progress}%` }}
+              style={{ width: `${hasError ? 100 : download?.progress}%` }}
             ></div>
           )}
         </div>

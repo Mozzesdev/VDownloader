@@ -63,6 +63,7 @@ export const getVideoDetails = async (
         timeZone: CLIENTS.IOS.TIME_ZONE,
         gl: CLIENTS.IOS.GL,
         utcOffsetMinutes: CLIENTS.IOS.UTC_OFFSET_MINUTES,
+        visitorData: "CgtFeW9KY2VPeG1oYyiWgfe7BjIKCgJWRRIEGgAgGw%3D%3D",
       },
     },
     contentCheckOk: true,
@@ -217,7 +218,6 @@ export const downloadVideo = async (
         (progress) => {
           if (progress === -1) {
             onProgress(-1);
-            throw new Error("Descarga cancelada");
           }
           totalProgress.video = progress;
           onOverallProgress();
@@ -240,7 +240,6 @@ export const downloadVideo = async (
         (progress) => {
           if (progress === -1) {
             onProgress(-1);
-            throw new Error("Descarga cancelada");
           }
           totalProgress.audio = progress;
           onOverallProgress();
@@ -386,6 +385,7 @@ export const downloadFile = async (
       fileStream.destroy();
     }
     deleteFileIfExists(format.filePath!);
+    onProgress(-1);
     throw new Error(error.message);
   }
 };
