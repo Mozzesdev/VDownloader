@@ -1,8 +1,8 @@
 <div align="center">
   <br/>
   <p>
-    <a href="https://github.com/LuanRT/YouTube.js">
-      <img src="https://luanrt.github.io/assets/img/ytjs.svg" alt="YouTube.js Logo" width="200" />
+    <a href="https://github.com/Mozzesdev/VDownloader">
+      <img src="https://raw.githubusercontent.com/Mozzesdev/VDownloader/refs/heads/main/icon.png" alt="VDownloader Logo" width="200" />
     </a>
   </p>
   <p>A JavaScript client for YouTube's private API</p>
