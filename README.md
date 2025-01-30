@@ -1,5 +1,22 @@
 # VDownloader
 
+<div align="center">
+  <br/>
+  <p>
+    <a href="https://github.com/LuanRT/YouTube.js">
+      <img src="https://luanrt.github.io/assets/img/ytjs.svg" alt="YouTube.js Logo" width="200" />
+    </a>
+  </p>
+  <p>A JavaScript client for YouTube's private API</p>
+
+[![Discord](https://img.shields.io/badge/discord-online-brightgreen.svg)][discord]
+[![CI](https://github.com/LuanRT/YouTube.js/actions/workflows/test.yml/badge.svg)][actions]
+[![NPM Version](https://img.shields.io/npm/v/youtubei.js?color=%2335C757)][versions]
+[![Downloads](https://img.shields.io/npm/dt/youtubei.js)][npm]
+[![Codefactor](https://www.codefactor.io/repository/github/luanrt/youtube.js/badge)][codefactor]
+
+</div>
+
 **VDownloader** is an application for downloading videos, playlists, and shorts from YouTube. It offers an intuitive and powerful experience to manage your downloads efficiently and select from multiple video and audio formats.
 
 ---
@@ -49,6 +66,13 @@ If you want to contribute to **VDownloader**, follow these steps:
    git push origin new-feature
    ```
 5. Open a pull request in this repository.
+
+---
+
+## Disclaimer
+This project is not affiliated with, endorsed, or sponsored by YouTube or any of its affiliates or subsidiaries. All trademarks, logos, and brand names used in this project are the property of their respective owners and are used solely to describe the services provided.
+
+As such, any usage of trademarks to refer to such services is considered nominative use. If you have any questions or concerns, please contact me.
 
 ---
 
