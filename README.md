@@ -1,5 +1,3 @@
-# VDownloader
-
 <div align="center">
   <br/>
   <p>
@@ -8,13 +6,6 @@
     </a>
   </p>
   <p>A JavaScript client for YouTube's private API</p>
-
-[![Discord](https://img.shields.io/badge/discord-online-brightgreen.svg)][discord]
-[![CI](https://github.com/LuanRT/YouTube.js/actions/workflows/test.yml/badge.svg)][actions]
-[![NPM Version](https://img.shields.io/npm/v/youtubei.js?color=%2335C757)][versions]
-[![Downloads](https://img.shields.io/npm/dt/youtubei.js)][npm]
-[![Codefactor](https://www.codefactor.io/repository/github/luanrt/youtube.js/badge)][codefactor]
-
 </div>
 
 **VDownloader** is an application for downloading videos, playlists, and shorts from YouTube. It offers an intuitive and powerful experience to manage your downloads efficiently and select from multiple video and audio formats.
