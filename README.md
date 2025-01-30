@@ -5,7 +5,7 @@
       <img src="https://raw.githubusercontent.com/Mozzesdev/VDownloader/refs/heads/main/icon.png" alt="VDownloader Logo" width="200" />
     </a>
   </p>
-  <p>A JavaScript client for YouTube's private API</p>
+  <p>A electron client for YouTube's private API</p>
 </div>
 
 **VDownloader** is an application for downloading videos, playlists, and shorts from YouTube. It offers an intuitive and powerful experience to manage your downloads efficiently and select from multiple video and audio formats.
