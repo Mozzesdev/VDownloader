@@ -16,9 +16,8 @@
 
 - **Video Downloads**: Download any YouTube video with just the link.
 - **Playlist Support**: Automatically download entire playlists.
-- **Shorts**: Compatible with YouTube short videos.
 - **Multiple Formats**: Choose from different video formats (MP4, MKV, etc.) and audio formats (MP3, AAC, etc.).
-- **Download Manager**: View progress, pause, resume, or cancel downloads directly from the interface.
+- **Download Manager**: View progress, or cancel downloads directly from the interface.
 - **Notifications**: Receive alerts when downloads are complete or if an error occurs.
 - **User-Friendly**: Designed to be simple and accessible.
 
